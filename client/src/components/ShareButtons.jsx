@@ -7,8 +7,39 @@ export default function ShareButtons({ id, title }) {
   const u = encodeURIComponent(url);
   const t = encodeURIComponent(title);
 
-  function copyLink() {
-    // TODO: copy `url` to the clipboard and show a toast
+  async function copyLink() {
+    // Bonus: native share sheet on touch devices that support it
+    const isTouch = window.matchMedia?.('(pointer: coarse)').matches;
+    if (isTouch && navigator.share) {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return; // user closed the sheet, not an error
+        // any other failure: fall through to copying
+      }
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // Fallback for plain-http pages and older browsers
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (!ok) throw new Error('execCommand copy failed');
+      }
+      toast('Link copied');
+    } catch {
+      toast('Could not copy the link', 'error');
+    }
   }
 
   return (
