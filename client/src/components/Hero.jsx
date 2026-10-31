@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getFeatured } from '../api.js';
@@ -11,20 +12,42 @@ export default function Hero() {
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
-    getFeatured().then(setSlides).catch(() => setSlides([]));
+    getFeatured()
+      .then(setSlides)
+      .catch(() => setSlides([]));
   }, []);
 
-  const next = () => setIndex((i) => (i + 1) % (slides.length - 1));
-  const prev = () => setIndex((i) => (i - 1 + slides.length) % slides.length);
+  // Move to the next story, including the last one.
+  const next = () => {
+    setIndex((i) => (slides.length ? (i + 1) % slides.length : 0));
+  };
 
+  // Move to the previous story, wrapping to the last story.
+  const prev = () => {
+    setIndex((i) =>
+      slides.length ? (i - 1 + slides.length) % slides.length : 0
+    );
+  };
+
+  // Keep the index valid if the number of stories changes.
+  useEffect(() => {
+    setIndex((i) => (slides.length ? i % slides.length : 0));
+  }, [slides.length]);
+
+  // Automatically change stories every 5 seconds.
   useEffect(() => {
     if (slides.length < 2 || paused) return undefined;
-    const timer = setInterval(next, 5000);
+
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % slides.length);
+    }, 5000);
+
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slides.length, paused]);
 
-  if (slides.length === 0) return <div className="hero hero-empty" aria-hidden="true" />;
+  if (slides.length === 0) {
+    return <div className="hero hero-empty" aria-hidden="true" />;
+  }
 
   const slide = slides[index];
 
@@ -36,14 +59,27 @@ export default function Hero() {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="hero-slide" key={slide.id}>
-        <Thumb category={slide.category} seed={slide.id} className="hero-bg" />
+        <Thumb
+          category={slide.category}
+          seed={slide.id}
+          className="hero-bg"
+        />
+
         <div className="hero-shade" />
+
         <div className="hero-content">
-          <span className={`tag tag-${slide.category}`}>{categoryName(slide.category)}</span>
+          <span className={`tag tag-${slide.category}`}>
+            {categoryName(slide.category)}
+          </span>
+
           <h1 className="hero-title">
-            <Link to={`/article/${slide.id}`}>{slide.title}</Link>
+            <Link to={`/article/${slide.id}`}>
+              {slide.title}
+            </Link>
           </h1>
+
           <p className="hero-summary">{slide.summary}</p>
+
           <Link to={`/article/${slide.id}`} className="btn btn-light">
             Read more <Icon name="arrow-right" size={16} />
           </Link>
@@ -52,12 +88,22 @@ export default function Hero() {
 
       {slides.length > 1 && (
         <>
-          <button className="hero-arrow hero-arrow-left" onClick={prev} aria-label="Previous story">
+          <button
+            className="hero-arrow hero-arrow-left"
+            onClick={prev}
+            aria-label="Previous story"
+          >
             <Icon name="chevron-left" size={20} />
           </button>
-          <button className="hero-arrow hero-arrow-right" onClick={next} aria-label="Next story">
+
+          <button
+            className="hero-arrow hero-arrow-right"
+            onClick={next}
+            aria-label="Next story"
+          >
             <Icon name="chevron-right" size={20} />
           </button>
+
           <div className="hero-dots">
             {slides.map((s, i) => (
               <button
@@ -65,7 +111,7 @@ export default function Hero() {
                 className={`hero-dot${i === index ? ' hero-dot-on' : ''}`}
                 onClick={() => setIndex(i)}
                 aria-label={`Show story ${i + 1}`}
-                aria-current={i === index}
+                aria-current={i === index ? 'true' : undefined}
               />
             ))}
           </div>
